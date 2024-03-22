@@ -1,0 +1,67 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #c1c1c1;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.ant-layout {
+  .ant-layout-sider {
+    background: #fff;
+  }
+
+  .ant-layout-sider-trigger {
+    background: var(--ant-color-border-secondary);
+  }
+}
+
+.ant-picker {
+  width: 100%;
+}
+
+.ant-picker-calendar.ant-picker-calendar-full .ant-picker-calendar-date-today {
+  border-color: var(--ant-calendar-full-panel-bg);
+  border-top: var(--ant-line-width-bold) var(--ant-line-type)
+    var(--ant-color-split);
+}
+
+.ant-picker-calendar .ant-picker-cell {
+  cursor: default;
+}
+
+.ant-picker-calendar.ant-picker-calendar-full
+  .ant-picker-cell-in-view.ant-picker-cell-selected
+  .ant-picker-calendar-date,
+.ant-picker-calendar.ant-picker-calendar-full
+  .ant-picker-cell-in-view.ant-picker-cell-selected
+  .ant-picker-calendar-date-today {
+  background: var(--ant-calendar-full-bg);
+
+  &:hover {
+    background: var(--ant-calendar-cell-hover-bg);
+  }
+}
+
+.dropdown-menu-item:hover {
+  background-color: var(--ant-control-item-bg-hover);
+}
