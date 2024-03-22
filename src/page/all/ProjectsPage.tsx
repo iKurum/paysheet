@@ -312,8 +312,8 @@ export default function ProjectsPage() {
   };
 
   const addUser = (users: any[]) => {
-    const beforeData = async () => {
-      const _data = user.current.filter((item) => {
+    const beforeData = async (res: any) => {
+      const _data = res.data.filter((item: any) => {
         return !users.some((user) => user.uid === item.uid);
       });
 
@@ -328,6 +328,7 @@ export default function ProjectsPage() {
       content: (
         <Table
           ref={userTable}
+          dataSource={user.current}
           rkey="uid"
           selectionType="checkbox"
           beforeData={beforeData}
@@ -335,10 +336,12 @@ export default function ProjectsPage() {
             {
               label: "姓名",
               key: "name",
+              fuzzy: true,
             },
             {
               label: "身份证号",
               key: "idcard",
+              fuzzy: true,
               span: 12,
             },
           ]}

@@ -164,26 +164,46 @@ function _Table(params: TableProps, ref: any) {
         Object.assign({}, params.query, form.getFieldsValue())
       );
 
+      const isFuzzy =
+        Object.keys(query).length &&
+        Object.keys(query).every((key) => key.startsWith("fuzzy_"));
+
       if (params.dbName) {
-        if (params.noPagination) {
-          db.getDataByIndex({
-            dbName: params.dbName,
-            query,
-          }).then((res) => {
+        if (isFuzzy) {
+          db.fuzzyQuery(params.dbName, query).then((res) => {
             dataFn(res, query);
           });
         } else {
-          db.cursorGetDataByIndexAndPage({
-            dbName: params.dbName,
-            query,
-            page: pager.current.page,
-            size: pager.current.size,
-          }).then((res) => {
-            dataFn(res, query);
-          });
+          if (params.noPagination) {
+            db.getDataByIndex({
+              dbName: params.dbName,
+              query,
+            }).then((res) => {
+              dataFn(res, query);
+            });
+          } else {
+            db.cursorGetDataByIndexAndPage({
+              dbName: params.dbName,
+              query,
+              page: pager.current.page,
+              size: pager.current.size,
+            }).then((res) => {
+              dataFn(res, query);
+            });
+          }
         }
       } else {
-        const _d: any = data || params.dataSource || [];
+        const _query = Object.keys(query).map((key) => [
+          key.replace("fuzzy_", ""),
+          query[key],
+        ]);
+
+        const _d: any = (data || params.dataSource || []).filter((item) => {
+          if (isFuzzy) {
+            return _query.every(([key, value]) => item[key].includes(value));
+          }
+          return true;
+        });
         dataFn({ data: _d, total: _d.length }, query);
       }
     },

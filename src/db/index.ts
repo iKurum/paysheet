@@ -310,29 +310,6 @@ class IndexDB {
   }
 
   /**
-   * 清洗索引查询参数
-   * @param {Query}
-   * @returns [string, any[] | string]
-   */
-  clearParams(query: Query): [string, any[] | string] {
-    const value: any = ["", []];
-    Object.keys(query).forEach((key) => {
-      value[0] = value[0].length ? `${value[0]}AND${key}` : key;
-      if (value[0].includes("AND")) {
-        if (Array.isArray(value[1])) {
-          value[1].push(query[key]);
-        } else {
-          value[1] = [value[1], query[key]];
-        }
-      } else {
-        value[1] = query[key];
-      }
-    });
-
-    return value;
-  }
-
-  /**
    * 删除指定主键的记录
    *
    */
@@ -351,6 +328,54 @@ class IndexDB {
         resolve(key);
       };
     });
+  }
+
+  /**
+   * 模糊搜索
+   *
+   */
+  async fuzzyQuery(dbName: string, query: Query): Promise<TableDataResProps> {
+    const all = await this.cursorGetData(dbName);
+    const res: TableDataResProps = {
+      data: [],
+      total: 0,
+    };
+
+    if (!all || !all.length) {
+      return res;
+    }
+
+    const _query: [string, any][] = Object.keys(query).map((key) => [
+      key.replace("fuzzy_", ""),
+      query[key],
+    ]);
+
+    return all.filter((item: any) => {
+      return _query.every(([key, value]) => item[key].includes(value));
+    });
+  }
+
+  /**
+   * 清洗索引查询参数
+   * @param {Query}
+   * @returns [string, any[] | string]
+   */
+  private clearParams(query: Query): [string, any[] | string] {
+    const value: any = ["", []];
+    Object.keys(query).forEach((key) => {
+      value[0] = value[0].length ? `${value[0]}AND${key}` : key;
+      if (value[0].includes("AND")) {
+        if (Array.isArray(value[1])) {
+          value[1].push(query[key]);
+        } else {
+          value[1] = [value[1], query[key]];
+        }
+      } else {
+        value[1] = query[key];
+      }
+    });
+
+    return value;
   }
 }
 
