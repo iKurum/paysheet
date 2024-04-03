@@ -5,6 +5,7 @@
 
 *.sh
 example
+/src/email/*
 
 # Logs
 logs

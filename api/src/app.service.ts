@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Request } from 'express';
-import { run_cmd, verify_signature } from './utils';
+import { connect, run_cmd, verify_signature } from './utils';
+import { IMail } from './@types';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class AppService {
@@ -34,5 +36,16 @@ export class AppService {
     };
 
     return result;
+  }
+
+  getMail(): IMail {
+    connect({
+      user: process.env.user || '',
+      password: process.env.password || '',
+    });
+
+    return {
+      last: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    };
   }
 }
