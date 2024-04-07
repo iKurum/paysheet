@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import { connect, run_cmd, verify_signature } from './utils';
 import { IMail } from './@types';
-import * as dayjs from 'dayjs';
 
 @Injectable()
 export class AppService {
@@ -19,7 +18,8 @@ export class AppService {
 
     if (event === 'push' && verify_signature(request)) {
       run_cmd('sh', ['./github.sh'], function (res) {
-        console.log(res); // res返回的是shell命令操作后在命令行终端显示的字符串，这里是一些git操作的提示
+        // res返回的是shell命令操作后在命令行终端显示的字符串，这里是一些git操作的提示
+        Logger.log(res);
       });
     }
 
@@ -38,14 +38,12 @@ export class AppService {
     return result;
   }
 
-  getMail(): IMail {
-    connect({
+  async getMail(): Promise<IMail> {
+    return await connect({
       user: process.env.user || '',
       password: process.env.password || '',
+    }).catch((err) => {
+      return err;
     });
-
-    return {
-      last: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-    };
   }
 }

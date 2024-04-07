@@ -18,7 +18,7 @@ export class AppController {
   }
 
   @Get('mail')
-  getMail(): IMail {
-    return this.appService.getMail();
+  async getMail(): Promise<IMail> {
+    return await this.appService.getMail();
   }
 }

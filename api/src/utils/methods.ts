@@ -1,10 +1,13 @@
+import { manifest_fn } from './yaml';
+import { merchants_bank } from './email';
 import { Request } from 'express';
 import { Buffer } from 'node:buffer';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Logger } from '@nestjs/common';
-import { HeaderValue } from 'mailparser';
 import * as fs from 'node:fs';
+import { IMail, UEmail } from 'src/@types';
+import { read_dataset, write_dataset } from './imap';
 
 export const verify_signature = (req: Request) => {
   const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET as string;
@@ -28,7 +31,7 @@ export const run_cmd = (
   args: string[],
   callback: (res: unknown) => void,
 ) => {
-  console.log('runCmd:', { cmd, args });
+  Logger.log(`runCmd:{ cmd: ${cmd}, args: ${args} }`);
   const child = spawn(cmd, args);
   let res = '';
 
@@ -40,83 +43,66 @@ export const run_cmd = (
   });
 };
 
-export const save_email = (params: {
-  title: HeaderValue | undefined;
-  content: string;
-  date: string;
-}) => {
-  const { title, content: data, date: fdate } = params;
-  const ts = ['每日信用管家'];
-  const reg = {
-    date: '([0-9\\/]*)&nbsp;您的消费明细如下',
-    time: '<font face="Awesome Font" style="font-size:12px;line-height:120%;">([0-9:]+)<\\/font>',
-    money:
-      '<font face="Awesome Font" style="font-size:16px;line-height:120%;">([A-Z]+)&nbsp;([0-9\\-?\\.?]+)<\\/font>',
-    desc: '<font face="Awesome Font" style="font-size:12px;line-height:120%;">(尾号\\d{4})&nbsp;(.+)&nbsp;(.+)-(.+)<\\/font>',
-  };
-  if (!title || !ts.includes(title?.toString()) || !data) return;
+export const save_email = (params: UEmail) => {
+  merchants_bank(params);
+};
 
-  let date: string,
-    time: string[],
-    desc: string[],
-    money: string[],
-    card: string = '';
-  const detail: any[] = [];
+export const re_data = () => {
+  Logger.log('re_data');
+  let {
+    first = '2024-01-01',
+    last = '2024-01-01',
+    // eslint-disable-next-line prefer-const
+    data = [],
+  } = read_dataset() as IMail;
 
-  // 招商每日信用管家
-  {
-    date =
-      data
-        .match(new RegExp(reg.date))?.[0]
-        ?.replace(/&nbsp;您的消费明细如下/, '')
-        ?.replace(/\//g, '-') || '';
-    time = data.match(new RegExp(reg.time, 'g')) || [];
-    money = data.match(new RegExp(reg.money, 'g')) || [];
-    desc = data.match(new RegExp(reg.desc, 'g')) || [];
+  const file_name: string[] = [];
 
-    if (time.length == money.length && desc.length == time.length) {
-      for (let i = 0; i < money.length; i++) {
-        const _m = new RegExp(reg.money).exec(money[i])?.slice(1, 3) || [];
-        const _t = new RegExp(reg.time).exec(time[i])?.slice(1, 2) || [];
-        const _d = new RegExp(reg.desc).exec(desc[i])?.slice(1, 5) || [];
+  function f(path: string) {
+    const pa = fs.readdirSync(path);
+    pa.forEach((item) => {
+      const stat = fs.lstatSync(path + '/' + item);
+      if (stat.isDirectory()) {
+        f(path + '/' + item);
+      } else if (item.endsWith('.json') && !item.startsWith('dataset')) {
+        let r: any = fs.readFileSync(path + '/' + item, 'utf-8');
+        if (r) {
+          r = JSON.parse(r);
 
-        card = _d[0];
-        detail.push({
-          time: _t[0],
-          currency: _m[0],
-          price: +_m[1],
-          type: _d[1],
-          pay: _d[2],
-          business: _d[3],
-        });
-      }
-    } else {
-      throw '解析错误';
-    }
-  }
+          let flag = false;
+          if (first > r.date) {
+            first = r.date;
+            flag = true;
+          }
+          if (last < r.date) {
+            last = r.date;
+            flag = true;
+          }
 
-  if (date) {
-    fs.writeFile(
-      `./src/email/${fdate}_${title}.json`,
-      JSON.stringify(
-        {
-          title,
-          card,
-          date,
-          money: detail.map(({ price }) => +price).reduce((a, b) => a + b, 0),
-          detail,
-        },
-        null,
-        '\t',
-      ),
-      'utf8',
-      (err) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log(`${fdate}_${title}.josn 文件写入成功`);
+          if (flag) {
+            file_name.push(item);
+            data.push({
+              date: r.date,
+              card: r.card,
+              money: r.money,
+              detail: r.detail,
+            });
+          }
         }
-      },
-    );
+      }
+    });
   }
+
+  f('./email');
+  manifest_fn(file_name);
+
+  const params = {
+    first,
+    last,
+    money: data.map((r) => r.money).reduce((a, b) => a.add(b)),
+    data: data.sort((a, b) => (a.date > b.date ? 1 : -1)),
+  };
+  write_dataset(params);
+
+  return params;
 };
