@@ -37,7 +37,6 @@ export const get_manifest = (): { [x: string]: string[] } => {
 };
 
 export const get_yaml = (key: string) => {
-  Logger.fatal(`获取yaml: ${key}`);
   const data = get_manifest();
   return data[key] || [];
 };

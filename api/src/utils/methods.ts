@@ -57,6 +57,11 @@ export const re_data = () => {
   } = read_dataset() as IMail;
 
   const file_name: string[] = [];
+  const m: any = {};
+
+  data.forEach((r) => {
+    m[r.date] = r.item;
+  });
 
   function f(path: string) {
     const pa = fs.readdirSync(path);
@@ -69,24 +74,33 @@ export const re_data = () => {
         if (r) {
           r = JSON.parse(r);
 
-          let flag = false;
           if (first > r.date) {
             first = r.date;
-            flag = true;
           }
           if (last < r.date) {
             last = r.date;
-            flag = true;
           }
 
-          if (flag) {
+          if (!data.some((d) => d.date === r.date)) {
+            (m[r.date] ??= []).push(item);
             file_name.push(item);
             data.push({
               date: r.date,
               card: r.card,
               money: r.money,
               detail: r.detail,
+              item: (m[r.date] ??= []),
             });
+          } else if (!m[r.date]?.includes(item)) {
+            (m[r.date] ??= []).push(item);
+            const index = data.findIndex((d) => d.date === r.date);
+            file_name.push(item);
+            data[index] = {
+              ...data[index],
+              detail: [...data[index].detail, ...r.detail],
+              money: data[index].money.add(r.money),
+              item: (m[r.date] ??= []),
+            };
           }
         }
       }
@@ -101,6 +115,7 @@ export const re_data = () => {
     last,
     money: data.map((r) => r.money).reduce((a, b) => a.add(b)),
     data: data.sort((a, b) => (a.date > b.date ? 1 : -1)),
+    total: data.length,
   };
   write_dataset(params);
 

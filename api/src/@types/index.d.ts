@@ -1,7 +1,10 @@
+import dayjs from 'dayjs';
+
 export interface IMail {
   first: string;
   last: string;
   money: number;
+  total: number;
   data: SMail[];
 }
 
@@ -17,6 +20,7 @@ type SMail = {
   date: string;
   money: number;
   card: string;
+  item: string[];
   detail: {
     time: string;
     currency: string;
@@ -35,5 +39,5 @@ export type Connect = {
 export type UEmail = {
   title: HeaderValue | undefined;
   content: string;
-  date: string;
+  date: dayjs.Dayjs;
 };

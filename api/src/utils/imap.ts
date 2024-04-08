@@ -41,41 +41,46 @@ class ImapClient {
         imap.search([key, ['SINCE', 'Jan 2, 2024']], function (err, results) {
           if (err) throw err;
 
-          const f = imap.fetch(results, { bodies: '', markSeen: true }); // 抓取邮件，读取之后改为已读（默认情况下邮件服务器的邮件是未读状态）
+          try {
+            const f = imap.fetch(results, { bodies: '', markSeen: true }); // 抓取邮件，读取之后改为已读（默认情况下邮件服务器的邮件是未读状态）
 
-          f.on('message', function (msg) {
-            const mailparser = new MailParser();
+            f.on('message', function (msg) {
+              const mailparser = new MailParser();
 
-            let title: HeaderValue | undefined, date: Date;
+              let title: HeaderValue | undefined, date: Date;
 
-            msg.on('body', function (stream) {
-              stream.pipe(mailparser); // 将为解析的数据流pipe到mailparser
+              msg.on('body', function (stream) {
+                stream.pipe(mailparser); // 将为解析的数据流pipe到mailparser
 
-              // 邮件头内容
-              mailparser.on('headers', function (headers) {
-                title = headers.get('subject');
-                date = new Date(headers.get('date') as string);
-              });
+                // 邮件头内容
+                mailparser.on('headers', function (headers) {
+                  title = headers.get('subject');
+                  date = new Date(headers.get('date') as string);
+                });
 
-              // 邮件内容
-              mailparser.on('data', function (data) {
-                if (data.type === 'text') {
-                  save_email({
-                    date: dayjs(date).format('YYYY-MM-DD'),
-                    title,
-                    content: data.html,
-                  });
-                }
+                // 邮件内容
+                mailparser.on('data', function (data) {
+                  if (data.type === 'text') {
+                    save_email({
+                      date: dayjs(date),
+                      title,
+                      content: data.text || data.html,
+                    });
+                  }
+                });
               });
             });
-          });
-          f.once('error', function (err) {
-            Logger.error(`抓取出现错误: ${err}`);
-          });
-          f.once('end', function () {
-            Logger.fatal('所有邮件抓取完成');
+            f.once('error', function (err) {
+              Logger.error(`抓取出现错误: ${err}`);
+            });
+            f.once('end', function () {
+              Logger.fatal('所有邮件抓取完成');
+              imap.end();
+            });
+          } catch (error) {
+            Logger.error(`imap ${error}`);
             imap.end();
-          });
+          }
         });
       });
     });
