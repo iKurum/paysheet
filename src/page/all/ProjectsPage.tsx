@@ -21,7 +21,6 @@ const { Text } = Typography;
 
 export default function ProjectsPage() {
   const table = useRef<any>();
-  const userTable = useRef<any>();
   const drawerTable = useRef<any>();
   const nowInfo = useRef<any>();
   const user = useRef<any[]>([]);
@@ -212,30 +211,26 @@ export default function ProjectsPage() {
                     dataIndex: "bankid",
                   },
                   {
-                    title: "默认月资",
+                    title: "月资",
                     dataIndex: "money",
-                    editable: true,
                     width: 200,
                   },
                 ] as any
               }
-              headButtons={[
+              search={[
                 {
-                  label: "添加",
-                  click: () => addUser(item.users || []),
-                },
-                {
-                  label: "删除",
-                  type: "default",
-                  auth: true,
-                  confirm: "是否确认删除？",
-                  click: (rows: any[]) => {
-                    editSave({ deluser: rows });
-                  },
+                  label: "日期",
+                  key: "date",
+                  type: "date",
+                  defaultValue: dayjs(),
+                  allowClear: false,
                 },
               ]}
-              dataSource={item.users || []}
-              editSave={(data) => editSave({ money: data })}
+              dataSource={[item.users]}
+              beforeData={async (res, query) => {
+                const data = res.data[0][query.date] || [];
+                return { data, total: data.length };
+              }}
               noPagination={true}
             />
           </Space>
@@ -257,19 +252,6 @@ export default function ProjectsPage() {
               label: "项目开始时间",
               name: "time",
             },
-            // {
-            //   type: "SELECT",
-            //   label: "关联人员",
-            //   name: "users",
-            //   rules: [{ required: true, message: "请选择项目关联人员" }],
-            //   options: user.current
-            //     .map((item: any) => ({
-            //       label: item.name,
-            //       value: item.uid,
-            //     }))
-            //     .sort((a: any, b: any) => a.label.localeCompare(b.label)),
-            //   multiple: true,
-            // },
             {
               type: "TEXTAREA",
               label: "项目描述",
@@ -309,66 +291,6 @@ export default function ProjectsPage() {
         table.current?.refresh();
       }
     );
-  };
-
-  const addUser = (users: any[]) => {
-    const beforeData = async (res: any) => {
-      const _data = res.data.filter((item: any) => {
-        return !users.some((user) => user.uid === item.uid);
-      });
-
-      return {
-        data: _data,
-        total: _data.length,
-      };
-    };
-
-    openModal({
-      title: "添加人员",
-      content: (
-        <Table
-          ref={userTable}
-          dataSource={user.current}
-          rkey="uid"
-          selectionType="checkbox"
-          beforeData={beforeData}
-          search={[
-            {
-              label: "姓名",
-              key: "name",
-              fuzzy: true,
-            },
-            {
-              label: "身份证号",
-              key: "idcard",
-              fuzzy: true,
-              span: 12,
-            },
-          ]}
-          columns={[
-            {
-              title: "姓名",
-              dataIndex: "name",
-            },
-            {
-              title: "身份证号",
-              dataIndex: "idcard",
-            },
-            {
-              title: "银行卡号",
-              dataIndex: "bankid",
-            },
-          ]}
-        ></Table>
-      ),
-      ok() {
-        const rows: any[] = userTable.current?.selectedRows();
-
-        if (rows.length) {
-          editSave({ adduser: users.concat(rows) });
-        }
-      },
-    });
   };
 
   const deleteProject = (data: any) => {

@@ -247,6 +247,7 @@ export const cleanExcelData = (
         project: item.project,
         date: date,
         idcard: item.idcard,
+        bankid: item.bankid,
       };
 
       if (robj[item.idcard]?.attend) {
