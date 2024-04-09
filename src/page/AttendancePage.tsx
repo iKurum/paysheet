@@ -37,12 +37,12 @@ export default function AttendancePage() {
       fileWidth: 24.75,
     },
     {
-      title: "卡户卡号",
+      title: "银行卡号",
       dataIndex: "bankid",
       render: (_: any, record: any) => {
         return users.current[record.idcard]?.bankid;
       },
-      file: "卡户卡号",
+      file: "银行卡号",
       fileWidth: 29.38,
     },
     {
@@ -287,6 +287,11 @@ export default function AttendancePage() {
           {
             title: "身份证号",
             dataIndex: "idcard",
+            width: 26,
+          },
+          {
+            title: "银行卡号",
+            dataIndex: "bankid",
             width: 26,
           },
           {
